@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jQuery Events Exercise</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .container { border: 1px solid #ccc; padding: 20px; margin: 20px 0; }
+        .event-box { width: 200px; height: 100px; background: #4CAF50; color: white; 
+                    display: flex; align-items: center; justify-content: center; margin: 10px 0; }
+        input { padding: 8px; margin: 10px 0; width: 200px; }
+    </style>
+</head>
+<body>
+    <h1>jQuery Event Handling Exercise</h1>
+    
+    <div class="container">
+        <h3>Mouse Events</h3>
+        <div class="event-box" id="mouse-box">Mouse Over Me</div>
+        <p>Event status: <span id="mouse-status">No event yet</span></p>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Your code will go here
+            // Exercise 1: Mouse events
+            $("#mouse-box").hover(function() {
+                $("#mouse-status").text("Mouse Entered");
+            }, function() {
+                $("#mouse-status").text("Mouse Left");
+            });
+        });
+    </script>
+</body>
+</html>
