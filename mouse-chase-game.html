@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jQuery Mouse Chase Game</title>
+    <style>
+        body { 
+            font-family: 'Arial', sans-serif; 
+            max-width: 900px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        h1 { text-align: center; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .game-container { 
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px; 
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+        }
+        .stats { 
+            display: flex; 
+            justify-content: space-around; 
+            margin: 20px 0;
+            font-size: 1.2em;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.2);
+            padding: 15px 25px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .target { 
+            width: 80px; 
+            height: 80px; 
+            background: radial-gradient(circle, #ff6b6b, #ee5a5a); 
+            border-radius: 50%;
+            position: absolute;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            user-select: none;
+        }
+        .target:hover {
+            transform: scale(1.1);
+            background: radial-gradient(circle, #ffd93d, #f9c846);
+        }
+        .target.caught {
+            animation: pop 0.3s ease;
+        }
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.4); }
+            100% { transform: scale(1); }
+        }
+        .game-area { 
+            width: 100%; 
+            height: 400px; 
+            background: rgba(255,255,255,0.15);
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        button {
+            background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1em;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 10px;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .message {
+            text-align: center;
+            font-size: 1.3em;
+            margin: 15px 0;
+            min-height: 30px;
+            font-weight: bold;
+        }
+        .timer {
+            color: #ffd93d;
+            font-size: 1.5em;
+        }
+        .difficulty {
+            text-align: center;
+            margin: 15px 0;
+        }
+        .difficulty button {
+            background: linear-gradient(45deg, #4CAF50, #66BB6A);
+        }
+        .difficulty button.active {
+            background: linear-gradient(45deg, #ffd93d, #ffec8b);
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 Mouse Chase Game</h1>
+    
+    <div class="game-container">
+        <div class="stats">
+            <div class="stat-box">Score: <span id="score">0</span></div>
+            <div class="stat-box">Time: <span id="timer" class="timer">30</span>s</div>
+            <div class="stat-box">Best: <span id="best-score">0</span></div>
+        </div>
+        
+        <div class="message" id="message">Click "Start Game" to begin!</div>
+        
+        <div class="difficulty">
+            <button onclick="setDifficulty('easy')" id="btn-easy">Easy</button>
+            <button onclick="setDifficulty('medium')" id="btn-medium" class="active">Medium</button>
+            <button onclick="setDifficulty('hard')" id="btn-hard">Hard</button>
+        </div>
+        
+        <div style="text-align: center;">
+            <button onclick="startGame()">🎮 Start Game</button>
+            <button onclick="resetGame()">🔄 Reset</button>
+        </div>
+        
+        <div class="game-area" id="game-area">
+            <div class="target" id="target" style="display: none;">Catch Me!</div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            let score = 0;
+            let timeLeft = 30;
+            let gameInterval;
+            let isPlaying = false;
+            let difficulty = 'medium';
+            let bestScore = localStorage.getItem('mouseChaseBest') || 0;
+            
+            $('#best-score').text(bestScore);
+            
+            // Set difficulty levels
+            window.setDifficulty = function(level) {
+                difficulty = level;
+                $('.difficulty button').removeClass('active');
+                $('#btn-' + level).addClass('active');
+                
+                if (level === 'easy') {
+                    $('#target').css({ width: '100px', height: '100px' });
+                } else if (level === 'medium') {
+                    $('#target').css({ width: '80px', height: '80px' });
+                } else {
+                    $('#target').css({ width: '60px', height: '60px' });
+                }
+            };
+            
+            // Move target to random position
+            function moveTarget() {
+                const gameArea = $('#game-area');
+                const target = $('#target');
+                const maxX = gameArea.width() - target.width();
+                const maxY = gameArea.height() - target.height();
+                
+                const randomX = Math.floor(Math.random() * maxX);
+                const randomY = Math.floor(Math.random() * maxY);
+                
+                target.css({
+                    left: randomX + 'px',
+                    top: randomY + 'px'
+                });
+            }
+            
+            // Target click event
+            $('#target').on('click', function() {
+                if (!isPlaying) return;
+                
+                score++;
+                $('#score').text(score);
+                $(this).addClass('caught');
+                
+                // Update message based on score
+                if (score % 5 === 0) {
+                    $('#message').text('🔥 Amazing! Keep going! 🔥');
+                } else if (score % 3 === 0) {
+                    $('#message').text('⭐ Great job! ⭐');
+                } else {
+                    $('#message').text('Nice catch! 🎯');
+                }
+                
+                setTimeout(() => {
+                    $(this).removeClass('caught');
+                    moveTarget();
+                }, 100);
+            });
+            
+            // Hover effect for extra points
+            $('#target').on('mouseenter', function() {
+                if (!isPlaying) return;
+                $(this).css('background', 'radial-gradient(circle, #ffd93d, #f9c846)');
+            });
+            
+            $('#target').on('mouseleave', function() {
+                if (!isPlaying) return;
+                $(this).css('background', 'radial-gradient(circle, #ff6b6b, #ee5a5a)');
+            });
+            
+            // Start game function
+            window.startGame = function() {
+                if (isPlaying) return;
+                
+                score = 0;
+                timeLeft = 30;
+                isPlaying = true;
+                
+                $('#score').text(score);
+                $('#timer').text(timeLeft);
+                $('#target').show();
+                $('#message').text('Go! Catch the red circle! 🎯');
+                
+                moveTarget();
+                
+                gameInterval = setInterval(function() {
+                    timeLeft--;
+                    $('#timer').text(timeLeft);
+                    
+                    if (timeLeft <= 10) {
+                        $('#timer').css('color', '#ff6b6b');
+                    } else {
+                        $('#timer').css('color', '#ffd93d');
+                    }
+                    
+                    if (timeLeft <= 0) {
+                        endGame();
+                    }
+                }, 1000);
+            };
+            
+            // End game function
+            function endGame() {
+                isPlaying = false;
+                clearInterval(gameInterval);
+                $('#target').hide();
+                $('#timer').css('color', '#ffd93d');
+                
+                // Update best score
+                if (score > bestScore) {
+                    bestScore = score;
+                    localStorage.setItem('mouseChaseBest', bestScore);
+                    $('#best-score').text(bestScore);
+                    $('#message').text('🏆 New High Score! 🏆 You scored ' + score + ' points!');
+                } else {
+                    $('#message').text('Game Over! You scored ' + score + ' points. Try again!');
+                }
+            }
+            
+            // Reset game function
+            window.resetGame = function() {
+                clearInterval(gameInterval);
+                isPlaying = false;
+                score = 0;
+                timeLeft = 30;
+                $('#score').text(score);
+                $('#timer').text(timeLeft);
+                $('#timer').css('color', '#ffd93d');
+                $('#target').hide();
+                $('#message').text('Click "Start Game" to begin!');
+            };
+            
+            // Initialize with medium difficulty
+            setDifficulty('medium');
+        });
+    </script>
+</body>
+</html>
